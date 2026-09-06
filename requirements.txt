@@ -1,0 +1,16 @@
+# --- Base (ya conocidas del curso) ---
+pandas
+numpy
+matplotlib
+seaborn
+scikit-learn
+
+# --- NLP ---
+nltk
+spacy
+
+# --- Deep Learning (LSTM) ---
+torch
+
+# --- Voz ---
+pyttsx3
