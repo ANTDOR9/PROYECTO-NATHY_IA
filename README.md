@@ -2,7 +2,6 @@
 
 Generador de letras de canciones con una red neuronal LSTM (PyTorch), con una demo extra de voz robótica (pyttsx3).
 
-Proyecto para el curso **PIAD425 – Python aplicado a Machine Learning** (SENATI).
 
 ## Idea del proyecto
 
