@@ -5,5 +5,3 @@ __pycache__/
 venv/
 *.pt
 *.pth
-data/raw/*
-!data/raw/.gitkeep
