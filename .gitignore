@@ -5,3 +5,7 @@ __pycache__/
 venv/
 *.pt
 *.pth
+outputs/audio/*.wav
+outputs/textos_generados/*.txt
+!outputs/audio/.gitkeep
+!outputs/textos_generados/.gitkeep

@@ -1,5 +1,9 @@
 # PROYECTO-NATHY_IA
 
+<p align="center">
+  <img src="capturas/captura-avance-1.png" alt="Captura de avance del proyecto" width="600">
+</p>
+
 Generador de letras de canciones con una red neuronal LSTM (PyTorch), con una demo extra de voz robótica (pyttsx3).
 
 
@@ -53,6 +57,7 @@ Cada script importante de `src/` tiene su propia explicación simple en `docs/`,
 | `src/entrenamiento.py` | [📄 docs/entrenamiento.md](docs/entrenamiento.md) |
 | `src/generar_texto.py` | [📄 docs/generar_texto.md](docs/generar_texto.md) |
 | `src/voz.py` | [📄 docs/voz.md](docs/voz.md) |
+| `src/interfaz.py` | [📄 docs/interfaz.md](docs/interfaz.md) |
 
 (se va completando a medida que se agregan `entrenamiento.py`, `generar_texto.py` y `voz.py`)
 
