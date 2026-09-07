@@ -2,7 +2,6 @@
 
 Generador de letras de canciones con una red neuronal LSTM (PyTorch), con una demo extra de voz robótica (pyttsx3).
 
-Proyecto para el curso **PIAD425 – Python aplicado a Machine Learning** (SENATI).
 
 ## Idea del proyecto
 
@@ -51,6 +50,7 @@ Cada script importante de `src/` tiene su propia explicación simple en `docs/`,
 |---|---|
 | `src/preprocesamiento.py` | [📄 docs/preprocesamiento.md](docs/preprocesamiento.md) |
 | `src/modelo_lstm.py` | [📄 docs/modelo_lstm.md](docs/modelo_lstm.md) |
+| `src/entrenamiento.py` | [📄 docs/entrenamiento.md](docs/entrenamiento.md) |
 
 (se va completando a medida que se agregan `entrenamiento.py`, `generar_texto.py` y `voz.py`)
 
