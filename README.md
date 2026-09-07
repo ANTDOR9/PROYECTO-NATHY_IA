@@ -52,6 +52,7 @@ Cada script importante de `src/` tiene su propia explicación simple en `docs/`,
 | `src/modelo_lstm.py` | [📄 docs/modelo_lstm.md](docs/modelo_lstm.md) |
 | `src/entrenamiento.py` | [📄 docs/entrenamiento.md](docs/entrenamiento.md) |
 | `src/generar_texto.py` | [📄 docs/generar_texto.md](docs/generar_texto.md) |
+| `src/voz.py` | [📄 docs/voz.md](docs/voz.md) |
 
 (se va completando a medida que se agregan `entrenamiento.py`, `generar_texto.py` y `voz.py`)
 
