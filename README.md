@@ -43,6 +43,17 @@ PROYECTO-NATHY_IA/
 - **`outputs/` separado de `data/`**: aquí solo caen resultados generados por el modelo, nunca datos de entrada.
 - **`planos/` y `docs/`**: todo lo visual y lo escrito para la sustentación queda junto, separado del código.
 
+## Documentación por archivo
+
+Cada script importante de `src/` tiene su propia explicación simple en `docs/`, de qué hace y cómo correrlo:
+
+| Script | Documentación |
+|---|---|
+| `src/preprocesamiento.py` | [📄 docs/preprocesamiento.md](docs/preprocesamiento.md) |
+| `src/modelo_lstm.py` | [📄 docs/modelo_lstm.md](docs/modelo_lstm.md) |
+
+(se va completando a medida que se agregan `entrenamiento.py`, `generar_texto.py` y `voz.py`)
+
 ## Instalación
 
 ```bash
