@@ -25,3 +25,24 @@ python src/modelo_lstm.py
 ```
 
 Corre una prueba rápida con datos inventados solo para confirmar que las dimensiones cuadran (entrada de secuencias de palabras → salida de puntajes por palabra del vocabulario).
+
+## ¿Dónde están el input layer, hidden layer y output layer?
+
+```mermaid
+flowchart LR
+    subgraph IN["INPUT LAYER"]
+        I["Embedding\n64 neuronas\n(por cada palabra del contexto)"]
+    end
+    subgraph HID["HIDDEN LAYER"]
+        H["LSTM\n128 neuronas\n(memoria + bias interno)"]
+    end
+    subgraph OUT["OUTPUT LAYER"]
+        O["Linear\n614 neuronas\n(1 por palabra del vocabulario + bias)"]
+    end
+
+    IN --> HID --> OUT
+```
+
+- **Input layer (64 neuronas):** capa `Embedding`. Convierte cada palabra (número) en un vector de 64 valores. Con una secuencia de 4 palabras, entran 4 vectores de 64 en total.
+- **Hidden layer (128 neuronas):** capa `LSTM`. Aquí vive la "memoria" de la red y los pesos + bias que se van ajustando durante el entrenamiento.
+- **Output layer (614 neuronas):** capa `Linear`. Una neurona de salida por cada palabra posible del vocabulario, más su bias — la neurona con el puntaje más alto es la palabra predicha.
