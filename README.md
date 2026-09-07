@@ -32,8 +32,9 @@ PROYECTO-NATHY_IA/
 ├── outputs/
 │   ├── textos_generados/  # letras generadas por el modelo (.txt)
 │   └── audio/              # salidas de audio de la voz robótica
-├── planos/                 # diagramas del proyecto (plano nathy.svg, planificación en draw.io)
-├── docs/                    # informe final, notas, capturas para la entrega
+├── capturas/                # capturas de avance y planos del proyecto (para el README)
+│   └── planos/               # diagramas del proyecto (plano-nathy.svg, planificación en draw.io)
+├── docs/                    # informe final, notas para la entrega
 ├── requirements.txt         # librerías del proyecto
 └── .gitignore
 ```
@@ -68,6 +69,14 @@ pip install -r requirements.txt
 python -m spacy download es_core_news_sm   # o el modelo del idioma del dataset
 ```
 
+## Uso rápido (interfaz gráfica)
+
+Ya con el modelo entrenado (`models/modelo_lstm.pt`), para generar una letra y escucharla sin usar la consola:
+
+```bash
+python src/interfaz.py
+```
+
 ## Flujo de trabajo
 
 1. Conseguir/armar el corpus de letras → `data/raw/`
@@ -76,4 +85,10 @@ python -m spacy download es_core_news_sm   # o el modelo del idioma del dataset
 4. Entrenar → `src/entrenamiento.py` → pesos en `models/`
 5. Generar letra nueva desde una semilla → `src/generar_texto.py` → `outputs/textos_generados/`
 6. Leer la letra en voz alta → `src/voz.py` → `outputs/audio/`
-7. Documentar y presentar → `docs/`, `planos/`
+7. Documentar y presentar → `docs/`, `capturas/planos/`
+
+## Plano del proyecto
+
+<p align="center">
+  <img src="capturas/planos/plano-nathy.svg" alt="Plano de planificación del proyecto" width="700">
+</p>
