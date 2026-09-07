@@ -6,8 +6,17 @@ GeneradorDeLetras (definido en modelo_lstm.py) para que aprenda a predecir
 la siguiente palabra a partir de un contexto de 4 palabras.
 
 Al terminar, guarda los pesos entrenados en models/modelo_lstm.pt
+
+Soporta entrenar por tandas: si ya existe un checkpoint en RUTA_MODELO,
+sigue entrenando desde ahi en vez de empezar de cero (util con datasets
+grandes que no alcanzan a entrenarse completos de una sola corrida).
+
+Uso:
+    python src/entrenamiento.py                # entrena EPOCAS_POR_TANDA épocas
+    python src/entrenamiento.py 50              # entrena 50 épocas en esta tanda
 """
 
+import sys
 import json
 import pickle
 
@@ -18,16 +27,14 @@ from torch.utils.data import Dataset, DataLoader
 from modelo_lstm import GeneradorDeLetras
 
 # --- Configuracion ---
-EPOCAS = 100          # cuantas veces recorre TODO el dataset
-TAMANO_LOTE = 32      # cuantas secuencias procesa junto antes de ajustar pesos
+EPOCAS_TOTALES = 100      # meta total de epocas a lo largo de todas las tandas
+EPOCAS_POR_TANDA = 60      # cuantas epocas entrena esta corrida si no se pasa un numero
+TAMANO_LOTE = 32
 TASA_APRENDIZAJE = 0.005
 RUTA_MODELO = "models/modelo_lstm.pt"
 
 
 class DatasetLetras(Dataset):
-    """Envuelve las secuencias en el formato que PyTorch necesita para
-    entrenar por lotes (batches)."""
-
     def __init__(self, secuencias_x, secuencias_y):
         self.x = torch.tensor(secuencias_x, dtype=torch.long)
         self.y = torch.tensor(secuencias_y, dtype=torch.long)
@@ -40,7 +47,8 @@ class DatasetLetras(Dataset):
 
 
 def main():
-    # --- Cargar datos ya preparados en el Paso 2 ---
+    epocas_esta_tanda = int(sys.argv[1]) if len(sys.argv) > 1 else EPOCAS_POR_TANDA
+
     with open("data/processed/vocabulario.json", encoding="utf-8") as f:
         vocab = json.load(f)
     with open("data/processed/secuencias.pkl", "rb") as f:
@@ -50,45 +58,59 @@ def main():
     dataset = DatasetLetras(datos["x"], datos["y"])
     cargador = DataLoader(dataset, batch_size=TAMANO_LOTE, shuffle=True)
 
-    print(f"Entrenando con {len(dataset)} secuencias, vocabulario de {tamano_vocab} palabras")
-
-    # --- Modelo, funcion de perdida y optimizador ---
     modelo = GeneradorDeLetras(tamano_vocabulario=tamano_vocab)
-
-    # CrossEntropyLoss: mide que tan lejos estuvo la prediccion de la
-    # palabra correcta (igual que en tus clasificadores con PyTorch)
+    optimizador = torch.optim.Adam(modelo.parameters(), lr=TASA_APRENDIZAJE)
     funcion_perdida = nn.CrossEntropyLoss()
 
-    # Adam: el mismo optimizador que ya usaste, ajusta los pesos de a poco
-    # en la direccion que reduce el error
-    optimizador = torch.optim.Adam(modelo.parameters(), lr=TASA_APRENDIZAJE)
+    epoca_inicial = 0
+    try:
+        checkpoint = torch.load(RUTA_MODELO, map_location="cpu")
+        if checkpoint.get("tamano_vocab") == tamano_vocab:
+            modelo.load_state_dict(checkpoint["state_dict"])
+            optimizador.load_state_dict(checkpoint["optimizador"])
+            epoca_inicial = checkpoint.get("epoca", 0)
+            print(f"Retomando entrenamiento desde la epoca {epoca_inicial} "
+                  f"(checkpoint encontrado en '{RUTA_MODELO}')")
+        else:
+            print("El vocabulario cambio desde el ultimo checkpoint, empezando de cero.")
+    except FileNotFoundError:
+        print("No hay checkpoint previo, empezando de cero.")
 
-    # --- Loop de entrenamiento ---
+    print(f"Entrenando con {len(dataset)} secuencias, vocabulario de {tamano_vocab} palabras")
+    print(f"Meta total: {EPOCAS_TOTALES} epocas | esta tanda: {epocas_esta_tanda} epocas")
+
     modelo.train()
-    for epoca in range(1, EPOCAS + 1):
+    epoca_final = epoca_inicial
+    for i in range(1, epocas_esta_tanda + 1):
+        epoca_actual = epoca_inicial + i
         perdida_total = 0.0
 
         for lote_x, lote_y in cargador:
-            optimizador.zero_grad()               # limpiar gradientes del paso anterior
-            predicciones = modelo(lote_x)          # forward: el modelo predice
-            perdida = funcion_perdida(predicciones, lote_y)  # que tan mal predijo
-            perdida.backward()                     # backward: calcula como ajustar cada peso
-            optimizador.step()                     # aplica el ajuste (regla delta, version PyTorch)
-
+            optimizador.zero_grad()
+            predicciones = modelo(lote_x)
+            perdida = funcion_perdida(predicciones, lote_y)
+            perdida.backward()
+            optimizador.step()
             perdida_total += perdida.item()
 
         perdida_promedio = perdida_total / len(cargador)
+        epoca_final = epoca_actual
 
-        if epoca % 10 == 0 or epoca == 1:
-            print(f"  Epoca {epoca:>3}/{EPOCAS}  -  perdida promedio: {perdida_promedio:.4f}")
+        if epoca_actual % 10 == 0 or i == 1 or i == epocas_esta_tanda:
+            print(f"  Epoca {epoca_actual:>3}/{EPOCAS_TOTALES}  -  perdida promedio: {perdida_promedio:.4f}")
 
-    # --- Guardar el modelo entrenado ---
     torch.save({
         "state_dict": modelo.state_dict(),
+        "optimizador": optimizador.state_dict(),
         "tamano_vocab": tamano_vocab,
+        "epoca": epoca_final,
     }, RUTA_MODELO)
 
-    print(f"\nModelo entrenado guardado en '{RUTA_MODELO}'")
+    print(f"\nModelo guardado en '{RUTA_MODELO}' (epoca {epoca_final}/{EPOCAS_TOTALES})")
+    if epoca_final < EPOCAS_TOTALES:
+        print(f"Faltan {EPOCAS_TOTALES - epoca_final} epocas. Corre de nuevo este script para continuar.")
+    else:
+        print("Entrenamiento completo.")
 
 
 if __name__ == "__main__":
