@@ -42,6 +42,23 @@ Semilla: "cuando te vi"
 
 **Conclusión para el informe:** más datos ayudó a que el modelo generalice en vez de memorizar, aunque con este tamaño de dataset el balance entre "coherente" y "memoriza literal" todavía depende bastante de qué tan específica es la semilla.
 
+
+## Segunda actualización: resultado con 60 canciones
+
+Con 60 canciones (21,614 palabras, vocabulario de 2,369), la generación ya no reproduce fragmentos literales de una sola canción, ni con semillas específicas:
+
+```
+Semilla: "yo quiero bailar contigo"
+-> yo quiero bailar contigo, te hizo cosas que hicimos esa conmigo ¿por qué yo sé que mueres con poderme ver mujer...
+
+Semilla: "el amor que siento"
+-> el amor que siento de todo un nuevo sentimiento y te enseña a querer a entregarte otra vez sin medir los abrazos...
+```
+
+- Ya no hay memorización literal de un solo verso — el texto combina vocabulario y giros de varias canciones distintas.
+- La coherencia gramatical sigue siendo imperfecta (frases como "te hizo cosas que hicimos esa conmigo" no tienen sentido estricto), pero el "tono" romántico/pop se mantiene consistente.
+- Confirma la hipótesis: **el cuello de botella era la cantidad de datos, no la arquitectura**. De 9 → 33 → 60 canciones, cada salto redujo la copia literal y aumentó la mezcla genuina de estilo.
+
 ## Salida que genera
 
 - **`outputs/textos_generados/ultima_generacion.txt`** — la última letra generada.

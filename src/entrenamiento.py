@@ -99,6 +99,16 @@ def main():
         if epoca_actual % 10 == 0 or i == 1 or i == epocas_esta_tanda:
             print(f"  Epoca {epoca_actual:>3}/{EPOCAS_TOTALES}  -  perdida promedio: {perdida_promedio:.4f}")
 
+        # Guardado parcial cada 10 epocas, para no perder progreso si la
+        # corrida se corta antes de terminar la tanda completa
+        if epoca_actual % 10 == 0:
+            torch.save({
+                "state_dict": modelo.state_dict(),
+                "optimizador": optimizador.state_dict(),
+                "tamano_vocab": tamano_vocab,
+                "epoca": epoca_actual,
+            }, RUTA_MODELO)
+
     torch.save({
         "state_dict": modelo.state_dict(),
         "optimizador": optimizador.state_dict(),
