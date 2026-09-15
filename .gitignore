@@ -9,3 +9,9 @@ outputs/audio/*.wav
 outputs/textos_generados/*.txt
 !outputs/audio/.gitkeep
 !outputs/textos_generados/.gitkeep
+
+# Dataset de melodias NES-MDB (musica de videojuegos con copyright,
+# empaquetado para investigacion academica): se usa solo localmente
+# para explorar la Parte 3 (musica), no se sube al repo
+exploracion_musica/dataset_midi/
+exploracion_musica/dataset_zip/

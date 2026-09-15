@@ -92,3 +92,9 @@ python src/interfaz.py
 <p align="center">
   <img src="capturas/planos/plano-nathy.svg" alt="Plano de planificación del proyecto" width="700">
 </p>
+
+## Exploración de música (opcional)
+
+Hay una exploración aparte para ver si el enfoque de LSTM se puede aplicar a generar melodías simples (estilo 8-bit), usando el dataset NES-MDB. No es parte del alcance principal del proyecto (que sigue siendo texto + voz).
+
+📄 [exploracion_musica/README.md](exploracion_musica/README.md) — dataset usado, links y nota sobre derechos de autor.
