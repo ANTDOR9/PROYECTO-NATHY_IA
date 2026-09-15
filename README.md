@@ -98,3 +98,9 @@ python src/interfaz.py
 Hay una exploración aparte para ver si el enfoque de LSTM se puede aplicar a generar melodías simples (estilo 8-bit), usando el dataset NES-MDB. No es parte del alcance principal del proyecto (que sigue siendo texto + voz).
 
 📄 [exploracion_musica/README.md](exploracion_musica/README.md) — dataset usado, links y nota sobre derechos de autor.
+
+## Curva de pérdida del entrenamiento
+
+Visualización de cómo se comportó la pérdida (loss) durante el entrenamiento, y qué significa que se haya "estabilizado".
+
+📄 [notebooks/README.md](notebooks/README.md) — gráfica, explicación y cómo se generó.

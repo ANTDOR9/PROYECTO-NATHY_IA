@@ -16,9 +16,11 @@ Uso:
     python src/entrenamiento.py 50              # entrena 50 épocas en esta tanda
 """
 
+import os
 import sys
 import json
 import pickle
+import csv
 
 import torch
 import torch.nn as nn
@@ -27,11 +29,25 @@ from torch.utils.data import Dataset, DataLoader
 from modelo_lstm import GeneradorDeLetras
 
 # --- Configuracion ---
-EPOCAS_TOTALES = 100      # meta total de epocas a lo largo de todas las tandas
+EPOCAS_TOTALES = 120      # meta total de epocas a lo largo de todas las tandas
 EPOCAS_POR_TANDA = 60      # cuantas epocas entrena esta corrida si no se pasa un numero
 TAMANO_LOTE = 32
 TASA_APRENDIZAJE = 0.005
 RUTA_MODELO = "models/modelo_lstm.pt"
+RUTA_HISTORIAL = "data/processed/historial_perdida.csv"
+
+
+def registrar_perdida(epoca, perdida):
+    """Agrega una fila (epoca, perdida) al historial en CSV, creando el
+    archivo con encabezado si todavia no existe. Esto es lo que despues
+    usamos en el notebook para graficar la curva de perdida."""
+    existe = os.path.exists(RUTA_HISTORIAL)
+    os.makedirs(os.path.dirname(RUTA_HISTORIAL), exist_ok=True)
+    with open(RUTA_HISTORIAL, "a", newline="", encoding="utf-8") as f:
+        escritor = csv.writer(f)
+        if not existe:
+            escritor.writerow(["epoca", "perdida"])
+        escritor.writerow([epoca, perdida])
 
 
 class DatasetLetras(Dataset):
@@ -95,6 +111,7 @@ def main():
 
         perdida_promedio = perdida_total / len(cargador)
         epoca_final = epoca_actual
+        registrar_perdida(epoca_actual, perdida_promedio)
 
         if epoca_actual % 10 == 0 or i == 1 or i == epocas_esta_tanda:
             print(f"  Epoca {epoca_actual:>3}/{EPOCAS_TOTALES}  -  perdida promedio: {perdida_promedio:.4f}")
