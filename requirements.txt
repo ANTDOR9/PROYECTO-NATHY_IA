@@ -12,5 +12,6 @@ spacy
 # --- Deep Learning (LSTM) ---
 torch
 
-# --- Voz ---
-pyttsx3
+# --- Voz (Silero TTS: se carga via torch.hub, no via pip - ver docs/voz.md) ---
+omegaconf
+sounddevice   # opcional: reproducir el audio en vivo desde voz.py (sin esto igual se guarda el .wav)

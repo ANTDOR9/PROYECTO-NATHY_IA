@@ -4,7 +4,7 @@
   <img src="capturas/captura-avance-1.png" alt="Captura de avance del proyecto" width="600">
 </p>
 
-Generador de letras de canciones con una red neuronal LSTM (PyTorch), con una demo extra de voz robótica (pyttsx3).
+Generador de letras de canciones con una red neuronal LSTM (PyTorch), con una demo extra de voz neuronal (Silero TTS).
 
 
 ## Idea del proyecto
@@ -12,7 +12,7 @@ Generador de letras de canciones con una red neuronal LSTM (PyTorch), con una de
 Le doy al sistema una o varias líneas de una canción (la "semilla") y el modelo genera una continuación de letra nueva, coherente con ese estilo.
 
 - **Parte 1 (foco principal, ~90%):** red neuronal LSTM en PyTorch que aprende a predecir la siguiente palabra/carácter a partir del contexto anterior, entrenada con un corpus de letras de canciones.
-- **Parte 2 (extra, ~10%):** leer en voz alta la letra generada con `pyttsx3` (voz robótica simple, offline). No se genera música ni ritmo con IA.
+- **Parte 2 (extra, ~10%):** leer en voz alta la letra generada con Silero TTS (voz neuronal, offline). No se genera música ni ritmo con IA.
 
 ## Estructura de carpetas
 
@@ -27,11 +27,11 @@ PROYECTO-NATHY_IA/
 │   ├── modelo_lstm.py        # arquitectura de la red (Embedding -> LSTM -> salida)
 │   ├── entrenamiento.py      # loop de entrenamiento (loss, optimizador, épocas)
 │   ├── generar_texto.py      # genera letra nueva a partir de una semilla
-│   └── voz.py                 # lee en voz alta la letra generada (pyttsx3)
+│   └── voz.py                 # lee en voz alta la letra generada (Silero TTS)
 ├── models/                # pesos del modelo ya entrenado (.pt) — no se sube a git
 ├── outputs/
 │   ├── textos_generados/  # letras generadas por el modelo (.txt)
-│   └── audio/              # salidas de audio de la voz robótica
+│   └── audio/              # salidas de audio de la voz generada
 ├── capturas/                # capturas de avance y planos del proyecto (para el README)
 │   └── planos/               # diagramas del proyecto (plano-nathy.svg, planificación en draw.io)
 ├── docs/                    # informe final, notas para la entrega
