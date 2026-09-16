@@ -23,6 +23,23 @@ Guardadas en `data/processed/`:
 - **`vocabulario.json`** — el diccionario palabra ↔ número, más el largo de secuencia usado.
 - **`secuencias.pkl`** — todas las secuencias de entrenamiento, ya convertidas a números.
 
+## Formato de nombres de archivo en `data/raw/`
+
+El script no depende del nombre del archivo (lee cualquier `.txt` que
+encuentre en la carpeta), pero para mantener orden se usan estos dos
+patrones:
+
+- **Canciones reales**: `Artista_-_Titulo.txt`
+  (ejemplo: `Aleks Syntek_-_Duele el amor.txt`)
+- **Letras originales escritas para este proyecto (sin artista real)**:
+  `IA_Original_-_Titulo.txt`
+  (ejemplo: `IA_Original_-_Somos Campeones.txt`)
+
+Esta segunda variante identifica las letras que no pertenecen a ningun
+artista existente (por ejemplo las de tematica de victoria/triunfo
+agregadas como dataset adicional), para diferenciarlas de un vistazo de
+las canciones reales con derechos de autor.
+
 ## Cómo correrlo
 
 ```bash

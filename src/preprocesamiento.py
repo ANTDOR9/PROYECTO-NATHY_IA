@@ -21,7 +21,7 @@ from nltk.tokenize import word_tokenize
 # --- Configuracion ---
 CARPETA_RAW = "data/raw"
 CARPETA_PROCESSED = "data/processed"
-LARGO_SECUENCIA = 4   # cuantas palabras de contexto usamos para predecir la siguiente
+LARGO_SECUENCIA = 6   # cuantas palabras de contexto usamos para predecir la siguiente
 
 nltk.download("punkt", quiet=True)
 nltk.download("punkt_tab", quiet=True)
