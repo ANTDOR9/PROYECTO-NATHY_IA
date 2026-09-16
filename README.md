@@ -34,7 +34,7 @@ PROYECTO-NATHY_IA/
 │   └── audio/              # salidas de audio de la voz generada
 ├── capturas/                # capturas de avance y planos del proyecto (para el README)
 │   └── planos/               # diagramas del proyecto (plano-nathy.svg, planificación en draw.io)
-├── docs/                    # informe final, notas para la entrega
+├── docs/                    # documentación por archivo (uno por cada .py importante)
 ├── requirements.txt         # librerías del proyecto
 └── .gitignore
 ```
@@ -42,10 +42,10 @@ PROYECTO-NATHY_IA/
 ### Por qué esta separación
 
 - **`data/raw` vs `data/processed`**: nunca se modifica el dataset original a mano; todo lo que se limpia/transforma se guarda aparte, así siempre se puede volver a empezar desde cero si algo sale mal.
-- **`src/` numerado por etapa**: cada archivo corresponde a un paso del flujo (preprocesar → armar modelo → entrenar → generar → dar voz), en el mismo orden en que se explica en el informe.
+- **`src/` numerado por etapa**: cada archivo corresponde a un paso del flujo (preprocesar → armar modelo → entrenar → generar → dar voz), en el mismo orden en que se ejecutan.
 - **`models/` fuera de git**: los pesos entrenados pesan mucho y no aportan como código, por eso están en `.gitignore`.
 - **`outputs/` separado de `data/`**: aquí solo caen resultados generados por el modelo, nunca datos de entrada.
-- **`planos/` y `docs/`**: todo lo visual y lo escrito para la sustentación queda junto, separado del código.
+- **`planos/` y `docs/`**: todo lo visual y lo escrito queda junto, separado del código.
 
 ## Documentación por archivo
 
