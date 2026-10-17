@@ -1,0 +1,9 @@
+data/raw/romantico/originales/Original_-_Lo que dejaste en mi abrigo.txt
+data/raw/romantico/reales/Afrodisiaco_-_El tiempo.txt
+data/raw/romantico/reales/CNCO_-_Se vuelve loca.txt
+data/raw/romantico/reales/David Bisbal_-_Bulería.txt
+data/raw/romantico/reales/Fonseca_-_Eres mi sueño.txt
+data/raw/romantico/reales/Luis Fonsi_-_Aquí estoy yo.txt
+data/raw/romantico/reales/Maryori_-_Cuando eras tú.txt
+data/raw/romantico/reales/Piso 21_-_Me llamas.txt
+data/raw/romantico/reales/Sebastián Yatra_-_Un año.txt

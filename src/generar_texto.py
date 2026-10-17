@@ -1,93 +1,168 @@
 """
 PROYECTO-NATHY_IA - Paso 5: Generacion de texto
 ---------------------------------------------------
-Carga el modelo ya entrenado (models/modelo_lstm.pt) y, a partir de una
-semilla escrita por el usuario, genera una continuacion de letra palabra
-por palabra.
+Carga un modelo ya entrenado y, a partir de una semilla escrita por el usuario,
+genera una continuacion de letra palabra por palabra.
 
 Como funciona la generacion (en simple):
     1) Tomamos las ultimas N palabras conocidas (la semilla, o lo ya generado)
-    2) El modelo predice la palabra mas probable como siguiente
-    3) Esa palabra se agrega al texto, y se vuelve a repetir el paso 1
-       (usando ahora las ultimas N palabras, que ya incluyen la nueva)
-Esto se llama generacion "autoregresiva": el modelo se alimenta de su
-propia salida anterior para seguir generando.
+    2) El modelo calcula una probabilidad para CADA palabra del vocabulario
+    3) Se sortea la siguiente palabra segun esas probabilidades
+       (la temperatura y top_k controlan que tan arriesgado es el sorteo)
+    4) Esa palabra se agrega al texto y se repite desde el paso 1
+Esto se llama generacion "autoregresiva": el modelo se alimenta de su propia salida.
+
+Hay dos modelos disponibles para poder compararlos:
+    "nuevo"    -> entrenado con validacion y early stopping (models/modelo_lstm.pt)
+    "anterior" -> el primero, entrenado 120 epocas sin validacion (memorizaba)
 """
 
 import os
 import re
 import json
-import pickle
 
 import torch
 import torch.nn.functional as F
 
 from modelo_lstm import GeneradorDeLetras
+from preprocesamiento import tokenizar
 
-RUTA_MODELO = "models/modelo_lstm.pt"
-RUTA_VOCAB = "data/processed/vocabulario.json"
 CARPETA_SALIDA = "outputs/textos_generados"
+
+MODELOS = {
+    "nuevo": {
+        "titulo": "Modelo nuevo",
+        "modelo": "models/modelo_lstm.pt",
+        "vocab": "data/processed/vocabulario.json",
+    },
+    "anterior": {
+        "titulo": "Modelo anterior",
+        "modelo": "models/modelo_lstm_v1_120epocas.pt",
+        "vocab": "models/vocabulario_v1.json",
+    },
+}
+RUTA_MODELO = MODELOS["nuevo"]["modelo"]   # (compatibilidad con otros scripts)
+RUTA_VOCAB = MODELOS["nuevo"]["vocab"]
 
 PALABRAS_A_GENERAR = 30
 TEMPERATURA = 0.8   # >1 = mas "arriesgado"/creativo, <1 = mas conservador/seguro
+TOP_K = 25          # solo se sortea entre las K palabras mas probables (evita palabras sin sentido)
+TOP_MOSTRADAS = 5   # cuantas candidatas se guardan por paso para el instructor
+
+_cache = {}
 
 
-def limpiar_semilla(texto: str) -> str:
-    texto = texto.lower()
-    texto = re.sub(r"[^a-záéíóúñü¡!¿?.,\s]", " ", texto)
-    texto = re.sub(r"\s+", " ", texto).strip()
-    return texto
+def modelo_disponible(clave: str) -> bool:
+    datos = MODELOS[clave]
+    return os.path.exists(datos["modelo"]) and os.path.exists(datos["vocab"])
 
 
-def elegir_siguiente_palabra(puntajes, temperatura):
-    """En vez de elegir siempre la palabra con el puntaje mas alto (lo cual
-    hace que el texto se repita mucho), convertimos los puntajes en
-    probabilidades (softmax) y elegimos al azar segun esas probabilidades.
-    La temperatura controla que tan "arriesgada" es esa eleccion."""
-    probabilidades = F.softmax(puntajes / temperatura, dim=-1)
-    indice_elegido = torch.multinomial(probabilidades, num_samples=1).item()
-    return indice_elegido
-
-
-def generar(semilla: str, num_palabras: int = PALABRAS_A_GENERAR, temperatura: float = TEMPERATURA) -> str:
-    # --- Cargar vocabulario y modelo entrenado ---
-    with open(RUTA_VOCAB, encoding="utf-8") as f:
+def cargar_modelo(clave: str = "nuevo"):
+    """Devuelve (modelo, vocab, info). La arquitectura (tamano de embedding, de capa
+    oculta, numero de capas) se deduce de los pesos guardados, asi que sirve para
+    cualquier modelo entrenado con una configuracion distinta."""
+    if clave in _cache:
+        return _cache[clave]
+    datos = MODELOS[clave]
+    with open(datos["vocab"], encoding="utf-8") as f:
         vocab = json.load(f)
+    checkpoint = torch.load(datos["modelo"], map_location="cpu")
+    pesos = checkpoint["state_dict"]
+
+    dim_embedding = pesos["embedding.weight"].shape[1]
+    dim_oculta = pesos["lstm.weight_hh_l0"].shape[1]
+    num_capas = sum(1 for k in pesos if k.startswith("lstm.weight_ih_l"))
+
+    modelo = GeneradorDeLetras(checkpoint["tamano_vocab"], dim_embedding, dim_oculta, num_capas)
+    modelo.load_state_dict(pesos)
+    modelo.eval()   # modo evaluacion: apaga el dropout y otras cosas que solo se usan al entrenar
+
+    info = {
+        "clave": clave,
+        "titulo": datos["titulo"],
+        "epocas": checkpoint.get("epoca"),
+        "perdida_val": checkpoint.get("perdida_val"),
+        "parametros": sum(p.numel() for p in modelo.parameters()),
+        "vocabulario": checkpoint["tamano_vocab"],
+        "dim_embedding": dim_embedding,
+        "dim_oculta": dim_oculta,
+    }
+    _cache[clave] = (modelo, vocab, info)
+    return _cache[clave]
+
+
+def distribucion(puntajes, temperatura, top_k=TOP_K):
+    """Convierte los puntajes del modelo en probabilidades (softmax), aplicando la
+    temperatura y dejando solo las top_k palabras mas probables."""
+    puntajes = puntajes / temperatura
+    if top_k and top_k < puntajes.numel():
+        umbral = torch.topk(puntajes, top_k).values[-1]
+        puntajes = puntajes.masked_fill(puntajes < umbral, float("-inf"))
+    return F.softmax(puntajes, dim=-1)
+
+
+def formatear_letra(texto: str) -> str:
+    """Convierte el marcador '|' de fin de verso en saltos de linea y pega la puntuacion."""
+    texto = texto.replace(" | ", "\n").replace("|", "\n")
+    texto = re.sub(r" +([,.!?])", r"\1", texto)
+    texto = re.sub(r"([¡¿]) +", r"\1", texto)
+    return "\n".join(linea.strip() for linea in texto.split("\n")).strip()
+
+
+def generar_con_detalle(semilla: str, num_palabras: int = PALABRAS_A_GENERAR,
+                        temperatura: float = TEMPERATURA, top_k: int = TOP_K,
+                        modelo: str = "nuevo", semilla_azar=None) -> dict:
+    """Genera la letra y ademas devuelve como 'penso' el modelo en cada paso.
+
+    Devuelve un diccionario con:
+        texto        la letra ya formateada
+        pasos        lista; por cada palabra generada: el contexto que vio, las
+                     candidatas mas probables con su probabilidad, y la elegida
+        desconocidas palabras de la semilla que el modelo no conoce (<UNK>)
+        info         datos del modelo usado (epocas, parametros, perdida de validacion...)
+    """
+    red, vocab, info = cargar_modelo(modelo)
+    if semilla_azar is not None:
+        torch.manual_seed(semilla_azar)
+
     palabra_a_indice = vocab["palabra_a_indice"]
     indice_a_palabra = {i: p for p, i in palabra_a_indice.items()}
-    largo_secuencia = vocab["largo_secuencia"]
+    largo = vocab["largo_secuencia"]
+    unk = palabra_a_indice["<UNK>"]
 
-    checkpoint = torch.load(RUTA_MODELO, map_location="cpu")
-    modelo = GeneradorDeLetras(tamano_vocabulario=checkpoint["tamano_vocab"])
-    modelo.load_state_dict(checkpoint["state_dict"])
-    modelo.eval()   # modo evaluacion: apaga cosas que solo se usan en entrenamiento
+    tokens = tokenizar(semilla)
+    desconocidas = [t for t in tokens if t not in palabra_a_indice]
+    if len(tokens) < largo:   # relleno al inicio para poder alimentar al modelo igual
+        tokens = ["<PAD>"] * (largo - len(tokens)) + tokens
+    indices = [palabra_a_indice.get(t, unk) for t in tokens]
 
-    # --- Preparar la semilla ---
-    semilla_limpia = limpiar_semilla(semilla)
-    tokens = semilla_limpia.split()
-
-    # si la semilla tiene menos palabras que el largo de secuencia, rellenamos
-    # al inicio con <PAD> para poder alimentar al modelo igual
-    if len(tokens) < largo_secuencia:
-        tokens = ["<PAD>"] * (largo_secuencia - len(tokens)) + tokens
-
-    indices = [palabra_a_indice.get(t, palabra_a_indice["<UNK>"]) for t in tokens]
-
-    # --- Generacion palabra por palabra ---
-    generadas = []
+    generadas, pasos = [], []
     with torch.no_grad():
         for _ in range(num_palabras):
-            contexto = torch.tensor([indices[-largo_secuencia:]], dtype=torch.long)
-            puntajes = modelo(contexto)[0]   # [tamano_vocab]
-            siguiente_idx = elegir_siguiente_palabra(puntajes, temperatura)
-            siguiente_palabra = indice_a_palabra.get(siguiente_idx, "<UNK>")
+            ventana = indices[-largo:]
+            contexto = [indice_a_palabra.get(i, "<UNK>") for i in ventana]
+            probs = distribucion(red(torch.tensor([ventana], dtype=torch.long))[0], temperatura, top_k)
+            idx = torch.multinomial(probs, num_samples=1).item()
+            mejores = torch.topk(probs, TOP_MOSTRADAS)
+            pasos.append({
+                "contexto": contexto,
+                "candidatas": [(indice_a_palabra.get(i.item(), "<UNK>"), p.item())
+                               for p, i in zip(mejores.values, mejores.indices)],
+                "elegida": indice_a_palabra.get(idx, "<UNK>"),
+                "prob_elegida": probs[idx].item(),
+            })
+            indices.append(idx)
+            generadas.append(indice_a_palabra.get(idx, "<UNK>"))
 
-            indices.append(siguiente_idx)
-            generadas.append(siguiente_palabra)
+    ultimos = [t for t in tokens[-largo:] if t != "<PAD>"]
+    texto = formatear_letra(" ".join(ultimos + generadas))
+    return {"texto": texto, "pasos": pasos, "desconocidas": desconocidas, "info": info}
 
-    texto_generado = " ".join(tokens[max(0, len(tokens) - largo_secuencia):]).replace("<PAD> ", "").strip()
-    texto_generado += " " + " ".join(generadas)
-    return texto_generado.strip()
+
+def generar(semilla: str, num_palabras: int = PALABRAS_A_GENERAR, temperatura: float = TEMPERATURA,
+            modelo: str = "nuevo") -> str:
+    """Version simple: solo devuelve la letra."""
+    return generar_con_detalle(semilla, num_palabras, temperatura, modelo=modelo)["texto"]
 
 
 def main():

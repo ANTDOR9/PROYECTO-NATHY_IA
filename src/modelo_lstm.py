@@ -15,8 +15,13 @@ import torch.nn as nn
 
 
 class GeneradorDeLetras(nn.Module):
-    def __init__(self, tamano_vocabulario, dim_embedding=64, dim_oculta=128, num_capas=1):
+    def __init__(self, tamano_vocabulario, dim_embedding=32, dim_oculta=64, num_capas=1, dropout=0.5):
         super().__init__()
+
+        # Dropout: durante el entrenamiento apaga al azar parte de las neuronas, lo que
+        # obliga a la red a no depender de detalles y reduce la memorizacion. En generar
+        # (modelo.eval()) queda desactivado solo.
+        self.dropout = nn.Dropout(dropout)
 
         # 1) Embedding: convierte cada numero-de-palabra en un vector de
         #    'dim_embedding' numeros que la red va APRENDIENDO a acomodar,
@@ -45,9 +50,9 @@ class GeneradorDeLetras(nn.Module):
 
     def forward(self, x):
         # x: tensor de forma [lote, largo_secuencia] con numeros de palabras
-        emb = self.embedding(x)                  # -> [lote, largo_secuencia, dim_embedding]
+        emb = self.dropout(self.embedding(x))     # -> [lote, largo_secuencia, dim_embedding]
         salida_lstm, _ = self.lstm(emb)           # -> [lote, largo_secuencia, dim_oculta]
-        ultima_memoria = salida_lstm[:, -1, :]    # nos quedamos con el ultimo paso de tiempo
+        ultima_memoria = self.dropout(salida_lstm[:, -1, :])    # ultimo paso de tiempo
         puntajes = self.salida(ultima_memoria)    # -> [lote, tamano_vocabulario]
         return puntajes
 

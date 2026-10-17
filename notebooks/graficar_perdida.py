@@ -32,22 +32,31 @@ def main():
               "para generar el historial.")
         return
 
-    epocas = []
-    perdidas = []
+    epocas, perdidas, perdidas_val = [], [], []
     with open(RUTA_CSV, encoding="utf-8") as f:
-        lector = csv.DictReader(f)
-        for fila in lector:
+        for fila in csv.DictReader(f):
             epocas.append(int(fila["epoca"]))
             perdidas.append(float(fila["perdida"]))
+            if fila.get("perdida_val"):
+                perdidas_val.append(float(fila["perdida_val"]))
 
     print(f"Leidas {len(epocas)} epocas del historial (de la {epocas[0]} a la {epocas[-1]})")
 
     plt.figure(figsize=(9, 5))
-    plt.plot(epocas, perdidas, marker="o", color="#4a7c59", linewidth=2, markersize=4)
+    plt.plot(epocas, perdidas, marker="o", color="#4a7c59", linewidth=2, markersize=4,
+             label="Entrenamiento (canciones que ve)")
+    if perdidas_val:
+        plt.plot(epocas, perdidas_val, marker="o", color="#c0562f", linewidth=2, markersize=4,
+                 label="Validacion (canciones que NO ve)")
+        mejor = min(range(len(perdidas_val)), key=perdidas_val.__getitem__)
+        plt.axvline(epocas[mejor], color="gray", linestyle="--", alpha=0.6)
+        plt.annotate(f"mejor modelo (epoca {epocas[mejor]})", (epocas[mejor], perdidas_val[mejor]),
+                     textcoords="offset points", xytext=(8, 10), fontsize=9)
     plt.title("Curva de perdida - PROYECTO-NATHY_IA (LSTM)")
     plt.xlabel("Epoca")
     plt.ylabel("Perdida promedio (CrossEntropyLoss)")
     plt.grid(True, alpha=0.3)
+    plt.legend()
     plt.tight_layout()
     plt.savefig(RUTA_IMAGEN, dpi=150)
 
