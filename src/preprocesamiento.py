@@ -38,12 +38,16 @@ def limpiar_texto(texto: str) -> str:
 
 
 def cargar_canciones(carpeta: str) -> list:
+    """Lee todos los .txt de 'carpeta' y de sus subcarpetas (data/raw/romantico/reales,
+    data/raw/romantico/originales, ...). Las carpetas que empiezan con '_' (ej. _archivo)
+    se ignoran: ahi se guardan canciones que no entran al entrenamiento."""
     canciones = []
-    for nombre in sorted(os.listdir(carpeta)):
-        if nombre.endswith(".txt"):
-            ruta = os.path.join(carpeta, nombre)
-            with open(ruta, "r", encoding="utf-8") as f:
-                canciones.append(f.read())
+    for raiz, subcarpetas, archivos in os.walk(carpeta):
+        subcarpetas[:] = sorted(d for d in subcarpetas if not d.startswith("_"))
+        for nombre in sorted(archivos):
+            if nombre.endswith(".txt"):
+                with open(os.path.join(raiz, nombre), "r", encoding="utf-8") as f:
+                    canciones.append(f.read())
     return canciones
 
 

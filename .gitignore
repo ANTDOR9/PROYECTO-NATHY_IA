@@ -15,3 +15,18 @@ outputs/textos_generados/*.txt
 # para explorar la Parte 3 (musica), no se sube al repo
 exploracion_musica/dataset_midi/
 exploracion_musica/dataset_zip/
+
+# Archivo generado por preprocesamiento.py (se regenera, no se versiona)
+data/processed/secuencias.pkl
+
+# Salidas auxiliares de Claude
+Claude outputs/
+
+# Sistema, editor y secretos
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+.env
+*.log
