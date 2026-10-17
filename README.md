@@ -1,8 +1,10 @@
 # PROYECTO-NATHY_IA
 
 <p align="center">
-  <img src="capturas/captura-avance-1.png" alt="Captura de avance del proyecto" width="600">
+  <img src="capturas/interfaz-supervisado.png" alt="Modo supervisado: comparación del modelo anterior contra el nuevo, con el panel del instructor" width="49%">
+  <img src="capturas/interfaz-no-supervisado.png" alt="Modo no supervisado: agrupamiento de canciones con K-Means, método del codo y silueta" width="49%">
 </p>
+<p align="center"><sub>Izquierda: modo supervisado (LSTM), comparando el modelo anterior con el nuevo. Derecha: modo no supervisado (agrupamiento). Haz clic en una imagen para verla completa.</sub></p>
 
 Generador de letras de canciones con una red neuronal LSTM (PyTorch), con una demo extra de voz neuronal (Silero TTS).
 

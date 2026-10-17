@@ -312,13 +312,13 @@ class App:
         p = self.panel_uns = tk.Frame(self.zona, bg=FONDO)
         ctrl = ttk.Frame(p, style="Panel.TFrame", padding=12)
         ctrl.pack(fill="x")
-        ttk.Label(ctrl, text="Cantidad de grupos (k)", style="Panel.TLabel").pack(side="left")
+        ttk.Label(ctrl, text="Cantidad de grupos (k)", style="Panel.TLabel").grid(row=0, column=0)
         self.k = tk.IntVar(value=3)
-        ttk.Spinbox(ctrl, from_=2, to=6, width=4, textvariable=self.k, font=(self.f, 11)).pack(side="left", padx=8)
+        ttk.Spinbox(ctrl, from_=2, to=6, width=4, textvariable=self.k, font=(self.f, 11)).grid(row=0, column=1, padx=8)
         self.boton_agrupar = ttk.Button(ctrl, text="Agrupar canciones", style="Accion.TButton", command=self.agrupar)
-        self.boton_agrupar.pack(side="left", padx=10)
-        self.metricas = ttk.Label(ctrl, text="", style="Suave.TLabel")
-        self.metricas.pack(side="left", padx=12)
+        self.boton_agrupar.grid(row=0, column=2, padx=10)
+        self.metricas = ttk.Label(ctrl, text="", style="Suave.TLabel")   # segunda fila: no se corta en pantallas chicas
+        self.metricas.grid(row=1, column=0, columnspan=4, sticky="w", pady=(8, 0))
 
         self.zona_grafica = tk.Frame(p, bg=PANEL, highlightbackground=LINEA, highlightthickness=1)
         self.zona_grafica.pack(fill="both", expand=True, pady=(10, 0))
@@ -591,7 +591,7 @@ class App:
         for w in self.zona_grafica.winfo_children():
             w.destroy()
 
-        fig = Figure(figsize=(7.4, 3.7), dpi=100, facecolor=PANEL)
+        fig = Figure(figsize=(7.4, 3.3), dpi=100, facecolor=PANEL)
         ax1, ax2 = fig.subplots(1, 2, gridspec_kw={"width_ratios": [1.35, 1]})
         plano, etiquetas, origen = r["plano"], r["etiquetas"], r["origen"]
         for i in range(r["n_canciones"]):
