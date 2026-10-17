@@ -48,12 +48,67 @@ def ver(palabra: str) -> str:
     return {"|": "¶", "<PAD>": "·", "<UNK>": "?"}.get(palabra, palabra)
 
 
+class ZonaDesplazable(tk.Frame):
+    """Marco con barra de desplazamiento vertical (y rueda del raton) para pantallas chicas.
+    Si el contenido cabe, se estira para llenar el espacio; si no cabe, aparece la barra."""
+
+    def __init__(self, padre, fondo):
+        super().__init__(padre, bg=fondo)
+        self.canvas = tk.Canvas(self, bg=fondo, highlightthickness=0, bd=0)
+        self.barra = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.barra.set)
+        self.barra.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.interior = tk.Frame(self.canvas, bg=fondo)
+        self._ventana = self.canvas.create_window((0, 0), window=self.interior, anchor="nw")
+        self.interior.bind("<Configure>", self._ajustar)
+        self.canvas.bind("<Configure>", self._ajustar)
+        for evento in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+            self.canvas.bind_all(evento, self._rueda, add="+")
+        self.after(300, self._vigilar)
+
+    def _ajustar(self, _evento=None):
+        ancho, alto = self.canvas.winfo_width(), self.canvas.winfo_height()
+        necesario = self.interior.winfo_reqheight()
+        # si sobra espacio, el contenido se estira; si falta, toma su altura natural y se desplaza
+        self.canvas.itemconfigure(self._ventana, width=ancho, height=alto if alto > necesario else 0)
+        self.canvas.configure(scrollregion=(0, 0, ancho, max(alto, necesario)))
+
+    def _vigilar(self):
+        """Recalcula la altura cada rato: el contenido cambia de tamano al generar letras."""
+        self._ajustar()
+        self.after(300, self._vigilar)
+
+    def _dentro(self, widget):
+        while widget is not None:
+            if widget is self:
+                return True
+            widget = getattr(widget, "master", None)
+        return False
+
+    def _rueda(self, evento):
+        bajo_el_puntero = self.winfo_containing(evento.x_root, evento.y_root)
+        if bajo_el_puntero is None or not self._dentro(bajo_el_puntero):
+            return
+        if bajo_el_puntero.winfo_class() in ("Text", "Treeview", "Listbox"):
+            return   # esos widgets ya se desplazan solos
+        if self.interior.winfo_reqheight() <= self.canvas.winfo_height():
+            return
+        sentido = -1 if (evento.num == 4 or getattr(evento, "delta", 0) > 0) else 1
+        self.canvas.yview_scroll(sentido * 3, "units")
+
+    def al_inicio(self):
+        self.canvas.yview_moveto(0)
+
+
 class App:
     def __init__(self, ventana):
         self.ventana = ventana
         ventana.title("PROYECTO-NATHY_IA · Generador de letras con instructor")
-        ventana.geometry("1280x820")
-        ventana.minsize(1080, 700)
+        ancho = min(1280, ventana.winfo_screenwidth() - 30)
+        alto = min(820, ventana.winfo_screenheight() - 90)
+        ventana.geometry(f"{ancho}x{alto}+10+10")   # nunca mas grande que tu pantalla
+        ventana.minsize(700, 480)
         ventana.configure(bg=FONDO)
 
         familias = set(tkfont.families())
@@ -103,8 +158,8 @@ class App:
         enc.pack(fill="x", padx=18, pady=(14, 6))
         tk.Label(enc, text="Generador de letras", bg=FONDO, fg=TINTA, font=(self.f, 18, "bold")).pack(side="left")
         tk.Label(enc, text="  con instructor", bg=FONDO, fg=SUAVE, font=(self.f, 18)).pack(side="left")
-        modos = tk.Frame(enc, bg=FONDO)
-        modos.pack(side="right")
+        modos = tk.Frame(self.ventana, bg=FONDO)
+        modos.pack(fill="x", padx=18, pady=(0, 2))
         tk.Label(modos, text="Modo de aprendizaje:", bg=FONDO, fg=SUAVE, font=(self.f, 10)).pack(side="left", padx=(0, 6))
         ttk.Radiobutton(modos, text="Supervisado · LSTM", variable=self.modo, value="supervisado",
                         style="Modo.TRadiobutton", command=self.cambiar_modo).pack(side="left")
@@ -115,18 +170,25 @@ class App:
         cuerpo = tk.PanedWindow(self.ventana, orient="horizontal", bg=FONDO, sashwidth=6, bd=0, sashrelief="flat")
         cuerpo.pack(fill="both", expand=True, padx=18, pady=(4, 6))
 
-        self.zona = tk.Frame(cuerpo, bg=FONDO)
-        cuerpo.add(self.zona, stretch="always", minsize=640)
+        self.desplazable = ZonaDesplazable(cuerpo, FONDO)
+        self.zona = self.desplazable.interior
+        cuerpo.add(self.desplazable, stretch="always", minsize=480)
 
         caja = tk.Frame(cuerpo, bg=INSTRUCTOR_FONDO, highlightbackground=LINEA, highlightthickness=1)
-        cuerpo.add(caja, minsize=330, width=400)
+        ancho_instructor = 290 if self.ventana.winfo_screenwidth() < 1300 else 380   # en pantallas chicas, mas espacio para el trabajo
+        cuerpo.add(caja, minsize=260, width=ancho_instructor)
         cab = tk.Frame(caja, bg=INSTRUCTOR_FONDO)
         cab.pack(fill="x", padx=14, pady=(12, 0))
         tk.Label(cab, text="Instructor", bg=INSTRUCTOR_FONDO, fg=TINTA, font=(self.f, 13, "bold")).pack(side="left")
-        self.texto_instructor = tk.Text(caja, wrap="word", bg=INSTRUCTOR_FONDO, fg=TINTA, relief="flat",
+        marco_texto = tk.Frame(caja, bg=INSTRUCTOR_FONDO)
+        marco_texto.pack(fill="both", expand=True)
+        barra_instructor = ttk.Scrollbar(marco_texto, orient="vertical")
+        barra_instructor.pack(side="right", fill="y")
+        self.texto_instructor = tk.Text(marco_texto, wrap="word", bg=INSTRUCTOR_FONDO, fg=TINTA, relief="flat",
                                         font=(self.f, 10), padx=14, pady=8, spacing1=2, spacing3=4, cursor="arrow",
-                                        highlightthickness=0)
-        self.texto_instructor.pack(fill="both", expand=True)
+                                        highlightthickness=0, yscrollcommand=barra_instructor.set)
+        self.texto_instructor.pack(side="left", fill="both", expand=True)
+        barra_instructor.config(command=self.texto_instructor.yview)
         t = self.texto_instructor
         t.tag_configure("h", font=(self.f, 11, "bold"), spacing1=10, spacing3=2, foreground=ACENTO_OSC)
         t.tag_configure("p", font=(self.f, 10), spacing3=4)
@@ -191,7 +253,7 @@ class App:
             barra.pack(fill="x")
             titulo = tk.Label(marco, text=MODELOS[clave]["titulo"], bg=PANEL, fg=color, font=(self.f, 11, "bold"), anchor="w")
             titulo.pack(fill="x", padx=10, pady=(8, 0))
-            sub = tk.Label(marco, text="", bg=PANEL, fg=SUAVE, font=(self.f, 9), anchor="w", justify="left", wraplength=360)
+            sub = tk.Label(marco, text="", bg=PANEL, fg=SUAVE, font=(self.f, 9), anchor="w", justify="left", wraplength=300)
             sub.pack(fill="x", padx=10)
             caja = scrolledtext.ScrolledText(marco, wrap="word", height=9, font=(self.f, 11), relief="flat",
                                              bg=PANEL, fg=TINTA, padx=10, pady=6, highlightthickness=0)
@@ -211,10 +273,10 @@ class App:
             ttk.Radiobutton(fila, text=texto, value=valor, variable=self.modelo_pasos, style="Panel.TRadiobutton",
                             command=self._llenar_pasos).pack(side="left", padx=8)
         self.tabla = ttk.Treeview(pasos, columns=("n", "contexto", "candidatas", "elegida"), show="headings", height=5)
-        for col, ancho, titulo in (("n", 36, "#"), ("contexto", 250, "Lo que vio (últimas palabras)"),
-                                   ("candidatas", 400, "Candidatas más probables"), ("elegida", 110, "Eligió")):
+        for col, ancho, titulo in (("n", 30, "#"), ("contexto", 170, "Lo que vio"),
+                                   ("candidatas", 250, "Candidatas más probables"), ("elegida", 90, "Eligió")):
             self.tabla.heading(col, text=titulo)
-            self.tabla.column(col, width=ancho, anchor="w", stretch=(col != "n"))
+            self.tabla.column(col, width=ancho, minwidth=30 if col == "n" else 60, anchor="w", stretch=(col != "n"))
         self.tabla.pack(fill="x", pady=(6, 0))
         self.tabla.bind("<<TreeviewSelect>>", self._explicar_paso)
 
@@ -267,15 +329,16 @@ class App:
         marco = ttk.LabelFrame(p, text="  Grupos encontrados  ", padding=(8, 6))
         marco.pack(fill="x", pady=(10, 0))
         self.tabla_grupos = ttk.Treeview(marco, columns=("g", "n", "comp", "pal"), show="headings", height=4)
-        for col, ancho, titulo in (("g", 60, "Grupo"), ("n", 80, "Canciones"), ("comp", 190, "Reales / originales"),
-                                   ("pal", 420, "Palabras que más lo distinguen")):
+        for col, ancho, titulo in (("g", 60, "Grupo"), ("n", 70, "Canciones"), ("comp", 120, "Reales / orig."),
+                                   ("pal", 300, "Palabras que más lo distinguen")):
             self.tabla_grupos.heading(col, text=titulo)
-            self.tabla_grupos.column(col, width=ancho, anchor="w", stretch=(col == "pal"))
+            self.tabla_grupos.column(col, width=ancho, minwidth=60, anchor="w", stretch=(col == "pal"))
         self.tabla_grupos.pack(fill="x")
         self.tabla_grupos.bind("<<TreeviewSelect>>", self._explicar_grupo)
 
     # ------------------------------------------------------------------ cambio de modo
     def cambiar_modo(self):
+        self.desplazable.al_inicio()
         if self.modo.get() == "supervisado":
             self.panel_uns.pack_forget()
             self.panel_sup.pack(fill="both", expand=True)
@@ -401,7 +464,7 @@ class App:
             c["caja"].config(state="disabled")
             val = f" · pérdida de validación {info['perdida_val']:.2f}" if info["perdida_val"] else " · sin validación"
             c["sub"].config(text=f"{info['epocas']} épocas · {info['parametros']:,} parámetros{val}".replace(",", "."))
-            c["medidas"].config(text=f"Copiado literal: {d['pct_copiado']:.0f} %    ·    Seguridad: {d['seguridad'] * 100:.0f} %")
+            c["medidas"].config(text=f"Copiado {d['pct_copiado']:.0f} %  ·  Seguridad {d['seguridad'] * 100:.0f} %")
         if "nuevo" in resultados:
             os.makedirs(CARPETA_SALIDA_TEXTO, exist_ok=True)
             with open(RUTA_ULTIMA_GENERACION, "w", encoding="utf-8") as f:
@@ -458,7 +521,7 @@ class App:
         if not r:
             return
         for i, p in enumerate(r["pasos"]):
-            cand = "   ".join(f"{ver(w)} {pr * 100:.0f}%" for w, pr in p["candidatas"])
+            cand = "  ".join(f"{ver(w)} {pr * 100:.0f}%" for w, pr in p["candidatas"])
             self.tabla.insert("", "end", iid=str(i), values=(
                 i + 1, " ".join(ver(w) for w in p["contexto"]), cand, f"{ver(p['elegida'])} ({p['prob_elegida'] * 100:.0f}%)"))
 
